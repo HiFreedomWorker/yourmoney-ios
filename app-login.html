@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>YourMoney 登录</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC",sans-serif;background:#fbf8f2;color:#2b2118;margin:0;padding:48px 20px;text-align:center}
+ h1{font-size:24px;margin:0 0 8px}p{color:#7a6a5a;font-size:15px;line-height:1.6}
+ #gBtn{display:flex;justify-content:center;margin:28px 0}
+ .back{display:inline-block;margin-top:20px;padding:14px 28px;border-radius:14px;background:#5a3d2b;color:#fff;text-decoration:none;font-weight:600;font-size:17px}
+ .hide{display:none}
+ @media (prefers-color-scheme:dark){body{background:#17130f;color:#eee4d6}p{color:#a99a88}}
+</style>
+</head>
+<body>
+<h1>💰 YourMoney</h1>
+<p id="msg">用 Google 账号登录，登录后会回到 YourMoney App。</p>
+<div id="gBtn"></div>
+<a id="back" class="back hide" href="#">返回 YourMoney</a>
+<script>
+const GOOGLE_CLIENT_ID='457580824661-3u9ugiugoeqsmcqapis5spb9s3fbrjvb.apps.googleusercontent.com';
+const ch=new URLSearchParams(location.search).get('ch')||'';
+const msg=document.getElementById('msg'),back=document.getElementById('back');
+async function post(path,body){const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(body)});let d=null;try{d=await r.json()}catch(e){}return{ok:r.ok,data:d}}
+async function finish(){
+ msg.textContent='正在返回 App…';
+ const r=await post('/api/auth/app-code',{challenge:ch});
+ if(!r.ok||!r.data||!r.data.code){msg.textContent='登录成功，但无法返回 App，请回到 App 重试。';return}
+ const url='yourmoney://login?code='+encodeURIComponent(r.data.code);
+ back.href=url;back.classList.remove('hide');
+ document.getElementById('gBtn').classList.add('hide');
+ msg.textContent='登录成功！如果没有自动跳回，请点下面的按钮。';
+ location.href=url;
+}
+async function onCred(resp){
+ const r=await post('/api/auth/google',{credential:resp.credential});
+ if(!r.ok){msg.textContent='登录失败，请重试。';return}
+ finish();
+}
+function start(){
+ if(!/^[A-Za-z0-9_-]{43}$/.test(ch)){msg.textContent='请从 YourMoney App 里点“使用 Google 登录”打开此页面。';return}
+ if(!(window.google&&google.accounts&&google.accounts.id)){setTimeout(start,300);return}
+ google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onCred,auto_select:false});
+ google.accounts.id.renderButton(document.getElementById('gBtn'),{theme:matchMedia('(prefers-color-scheme: dark)').matches?'filled_black':'outline',size:'large',text:'signin_with',shape:'pill',locale:'zh_CN'});
+}
+start();
+</script>
+</body>
+</html>
