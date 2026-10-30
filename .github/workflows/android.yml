@@ -29,7 +29,7 @@ jobs:
         run: |
           npx cap add android
           npx cap sync android
-          echo "ext.androidxBrowserVersion = '1.8.0'" >> android/variables.gradle
+          printf "\next.androidxBrowserVersion = '1.8.0'\n" >> android/variables.gradle
           cat >> android/build.gradle <<'GRADLE'
 
           allprojects {
