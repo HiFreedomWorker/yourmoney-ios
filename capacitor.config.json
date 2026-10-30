@@ -1,0 +1,10 @@
+{
+  "appId": "com.yourmoneyhubs.app",
+  "appName": "YourMoney",
+  "webDir": "www",
+  "server": {
+    "url": "https://yourmoneyhubs.com",
+    "allowNavigation": ["yourmoneyhubs.com", "www.yourmoneyhubs.com"]
+  },
+  "ios": { "contentInset": "always" }
+}
