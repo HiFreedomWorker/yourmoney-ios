@@ -31,8 +31,8 @@ async function finish(){
  const url='yourmoney://login?code='+encodeURIComponent(r.data.code);
  back.href=url;back.classList.remove('hide');
  document.getElementById('gBtn').classList.add('hide');
- msg.textContent='登录成功！如果没有自动跳回，请点下面的按钮。';
- location.href=url;
+ msg.textContent='登录成功！请回到 YourMoney App，它会自动完成登录。也可以点下面的按钮返回。';
+ try{location.href=url}catch(e){}
 }
 async function onCred(resp){
  const r=await post('/api/auth/google',{credential:resp.credential});
