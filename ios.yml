@@ -1,0 +1,71 @@
+name: Build iOS (unsigned IPA)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+env:
+  YM_SCHEME: yourmoney
+  GOOGLE_IOS_CLIENT_ID: 457580824661-22p6qc4t1d1rq98l083tr3il33k6hjft.apps.googleusercontent.com
+  GOOGLE_REVERSED_ID: com.googleusercontent.apps.457580824661-22p6qc4t1d1rq98l083tr3il33k6hjft
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Capacitor
+        run: npm install
+
+      - name: Create iOS project
+        run: |
+          npx cap add ios
+          PLIST=ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleURLTypes" $PLIST || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" $PLIST
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" $PLIST
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string com.yourmoneyhubs.app" $PLIST
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" $PLIST
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string $YM_SCHEME" $PLIST
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:1 dict" $PLIST
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:1:CFBundleURLSchemes array" $PLIST
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:1:CFBundleURLSchemes:0 string $GOOGLE_REVERSED_ID" $PLIST
+          /usr/libexec/PlistBuddy -c "Add :GIDClientID string $GOOGLE_IOS_CLIENT_ID" $PLIST || true
+          python3 - <<'PY'
+          p = 'ios/App/App/AppDelegate.swift'
+          s = open(p).read()
+          if 'import GoogleSignIn' not in s:
+              s = s.replace('import Capacitor', 'import Capacitor\nimport GoogleSignIn', 1)
+          t = 'return ApplicationDelegateProxy.shared.application(app, open: url, options: options)'
+          if 'GIDSignIn.sharedInstance.handle(url)' not in s:
+              assert s.count(t) == 1, 'AppDelegate open-url handler not found'
+              s = s.replace(t, 'if GIDSignIn.sharedInstance.handle(url) { return true }\n        ' + t)
+          open(p, 'w').write(s)
+          print(s)
+          PY
+          npx cap sync ios
+
+      - name: Build app (no signing)
+        run: |
+          cd ios/App
+          if [ -d App.xcworkspace ]; then TARGET="-workspace App.xcworkspace"; else TARGET="-project App.xcodeproj"; fi
+          xcodebuild $TARGET -scheme App -configuration Release -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -R ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qr YourMoney-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: YourMoney-unsigned-ipa
+          path: YourMoney-unsigned.ipa
