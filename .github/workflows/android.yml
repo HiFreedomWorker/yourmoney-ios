@@ -25,11 +25,33 @@ jobs:
       - name: Install Capacitor
         run: |
           npm install
-          npm install @capacitor/android@^7.0.0
+          npm install @capacitor/android@^7.0.0 @capacitor/filesystem@^7.0.0 send-intent@^7.0.0
 
       - name: Create Android project
         run: |
           npx cap add android
+          python3 - <<'PY'
+          p = 'android/app/src/main/AndroidManifest.xml'
+          s = open(p).read()
+          act = '''
+                  <activity
+                      android:name="de.mindlib.sendIntent.SendIntentActivity"
+                      android:label="@string/app_name"
+                      android:exported="true"
+                      android:theme="@style/AppTheme.NoActionBar">
+                      <intent-filter>
+                          <action android:name="android.intent.action.SEND" />
+                          <category android:name="android.intent.category.DEFAULT" />
+                          <data android:mimeType="image/*" />
+                      </intent-filter>
+                  </activity>
+          '''
+          if 'SendIntentActivity' not in s:
+              assert s.count('</application>') == 1
+              s = s.replace('</application>', act + '    </application>')
+          open(p, 'w').write(s)
+          print(s)
+          PY
           npx cap sync android
           printf "\next.androidxBrowserVersion = '1.8.0'\n" >> android/variables.gradle
           cat >> android/build.gradle <<'GRADLE'
