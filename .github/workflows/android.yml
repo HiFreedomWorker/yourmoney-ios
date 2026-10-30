@@ -29,6 +29,17 @@ jobs:
         run: |
           npx cap add android
           npx cap sync android
+          echo "ext.androidxBrowserVersion = '1.8.0'" >> android/variables.gradle
+          cat >> android/build.gradle <<'GRADLE'
+
+          allprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      force 'androidx.browser:browser:1.8.0'
+                  }
+              }
+          }
+          GRADLE
 
       - name: Build APK
         run: |
