@@ -53,6 +53,7 @@ jobs:
           print(s)
           PY
           npx cap sync android
+          npx --yes @capacitor/assets@^3 generate --android --iconBackgroundColor '#FFF8F0' --iconBackgroundColorDark '#1C1612' --splashBackgroundColor '#FFF8F0' --splashBackgroundColorDark '#1C1612'
           printf "\next.androidxBrowserVersion = '1.8.0'\n" >> android/variables.gradle
           cat >> android/build.gradle <<'GRADLE'
 

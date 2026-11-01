@@ -52,6 +52,7 @@ jobs:
           print(s)
           PY
           npx cap sync ios
+          npx --yes @capacitor/assets@^3 generate --ios --iconBackgroundColor '#FFF8F0' --splashBackgroundColor '#FFF8F0' --splashBackgroundColorDark '#1C1612'
 
       - name: Build app (no signing)
         run: |
